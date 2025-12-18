@@ -4,34 +4,34 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
-# Configuramos para que se vea bien en pantallas pequeñas
+# Configuración para móvil
 st.set_page_config(page_title="Actitud Golf", page_icon="⛳", layout="centered")
 
+# CONFIGURACIÓN DE CONEXIÓN
 URL = "https://script.google.com/macros/s/AKfycbwCue3cavrYDkwxesQrcetNM8qId7OiCh5Ez-qoJuCnSULsvWAWPlezpNao6tCsLU1k/exec"
 S_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
 
+# LISTA DE ALUMNOS (Edita aquí tus 20 nombres)
 JUGADORES = ["Seleccionar...", "Agustin", "Andres", "Carlos Garcia", "Maria Lopez"]
 
 if 'user' not in st.session_state:
     st.session_state['user'] = None
 
+# --- LOGIN ---
 if st.session_state['user'] is None:
     st.title("⛳ Actitud Golf")
-    st.write("Selecciona tu nombre:")
-    sel = st.selectbox("", JUGADORES) # Quitamos la etiqueta para ganar espacio
-    if st.button("ENTRAR", use_container_width=True): # Botón ancho para dedo
+    st.write("Identifícate:")
+    sel = st.selectbox("", JUGADORES)
+    if st.button("ENTRAR", use_container_width=True):
         if sel != "Seleccionar...":
             st.session_state['user'] = sel
             st.rerun()
     st.stop()
 
 user = st.session_state['user']
-# En móvil la sidebar se esconde, ponemos el saludo arriba
-st.write(f"Hola, **{user}** 👋")
-
-# --- MENU MOVIL ---
+st.sidebar.write(f"Jugador: **{user}**")
 menu = st.sidebar.radio("Menú:", ["Cargar Datos", "📊 Estadísticas"])
-modo = st.sidebar.radio("Entorno:", ["Práctica", "Cancha"])
+modo = st.sidebar.radio("Entorno:", ["Práctica", "Juego en Cancha"])
 fecha = str(st.sidebar.date_input("Fecha", datetime.now()))
 
 if st.sidebar.button("Cerrar Sesión"):
@@ -47,8 +47,9 @@ def leer(hoja):
     except:
         return pd.DataFrame()
 
+# --- CARGA DE DATOS ---
 if menu == "Cargar Datos":
-    t1, t2 = st.tabs(["🎯 CORTO", "📏 LAG"])
+    t1, t2 = st.tabs(["🎯 PUTT CORTO", "📏 LAG PUTTING"])
     
     with t1:
         if modo == "Práctica":
@@ -58,52 +59,58 @@ if menu == "Cargar Datos":
             if st.button("GUARDAR PRÁCTICA", use_container_width=True):
                 js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Putt Corto","subcategoria":d,"intentos":i,"aciertos":a}
                 requests.post(URL, json=js)
-                st.success("¡Guardado!")
-                st.balloons()
+                st.success("¡Datos guardados!")
         else:
-            can = st.text_input("Cancha", placeholder="Nombre del club")
-            ho = st.number_input("Hoyo", 1, 18, 1)
-            res = st.selectbox("Resultado:", ["Emboqué", "Corta", "Derecha", "Izquierda", "Larga"])
-            if st.button("GUARDAR EN CANCHA", use_container_width=True):
-                js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Putt Corto","cancha":can,"hoyo":ho,"resultado":res}
+            st.subheader("Putt en Cancha")
+            can = st.text_input("Club / Cancha:", placeholder="Ej: Olivos")
+            ho = st.number_input("Hoyo:", 1, 18, 1)
+            dist_c = st.selectbox("Distancia aprox:", ["35cm", "70cm", "1m", "1.5m", "2m", "Más"])
+            res_c = st.selectbox("Resultado:", ["Emboqué", "Falle: Corta", "Falle: Derecha", "Falle: Izquierda", "Falle: Larga"])
+            if st.button("REGISTRAR PUTT CANCHA", use_container_width=True):
+                js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Putt Corto","cancha":can,"hoyo":ho,"distancia":dist_c,"resultado":res_c}
                 requests.post(URL, json=js)
-                st.success("¡Registrado!")
+                st.success("¡Hoyo registrado!")
 
     with t2:
         if modo == "Práctica":
-            ran = st.selectbox("Rango:", ["Lag A", "Lag B", "Lag C"])
+            ran = st.selectbox("Rango:", ["Lag A (2.5-8m)", "Lag B (8.5-15m)", "Lag C (15.5-25m)"])
             v1 = st.number_input("A menos de 1m", 0, 10, 0)
             v2 = st.number_input("Entre 1m y 1.5m", 0, 10, 0)
             v3 = st.number_input("A más de 1.5m", 0, 10, 0)
-            if st.button("GUARDAR LAG", use_container_width=True):
+            if st.button("GUARDAR SESIÓN LAG", use_container_width=True):
                 if (v1+v2+v3==10):
                     js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Lag Putting","subcategoria":ran,"menos de 1 metro":v1,"entre un metro y un metro y medio":v2,"mas de un metro y medio":v3}
                     requests.post(URL, json=js)
-                    st.success("¡Guardado!")
+                    st.success("¡Sesión guardada!")
                 else: st.error("La suma debe ser 10")
         else:
-            can2 = st.text_input("Cancha", key="c2")
+            st.subheader("Lag en Cancha")
+            can2 = st.text_input("Cancha:", placeholder="Nombre del club", key="c2")
+            ho2 = st.number_input("Hoyo:", 1, 18, 1, key="h2")
+            dist_l = st.number_input("Metros al hoyo:", 3.0, 50.0, 10.0)
             res2 = st.selectbox("Resultado:", ["Emboqué", "Menos de 1m", "Entre 1m y 1.5m", "Mas de 1.5m"])
-            if st.button("GUARDAR LAG CANCHA", use_container_width=True):
-                js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Lag Putting","cancha":can2,"resultado":res2}
+            if st.button("REGISTRAR LAG CANCHA", use_container_width=True):
+                js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Lag Putting","cancha":can2,"hoyo":ho2,"distancia":dist_l,"resultado":res2}
                 requests.post(URL, json=js)
-                st.success("¡Registrado!")
+                st.success("¡Lag registrado!")
 
+# --- ESTADÍSTICAS ---
 else:
-    st.header("📊 Mis Estadísticas")
-    # En móvil las columnas se apilan solas, pero forzamos el orden
+    st.header(f"📊 Reporte: {user}")
+    
+    # Bloque Práctica
+    st.divider()
+    st.subheader("🛠️ Rendimiento en Práctica")
     df1 = leer("Putt_Corto")
     if not df1.empty:
-        st.subheader("🎯 Práctica Corto")
         res = df1.groupby('Subcategoria').agg({'Aciertos':'sum','Intentos':'sum'}).reset_index()
         res['%'] = (res['Aciertos']/res['Intentos'])*100
-        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], text='%'), use_container_width=True)
+        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], title="Efectividad Corto %"), use_container_width=True)
     
     df2 = leer("Lag_Putting")
     if not df2.empty:
-        st.subheader("📏 Práctica Lag")
         cols = ["Menos De 1 Metro", "Entre Un Metro Y Un Metro Y Medio", "Mas De Un Metro Y Medio"]
         existentes = [c for c in cols if c in df2.columns]
         if existentes:
             vals = [df2[c].sum() for c in existentes]
-            st.plotly_chart(px.pie(values=vals, names=existentes, hole=0.4), use_container_width=True)
+            st.plotly_chart(px
