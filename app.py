@@ -9,7 +9,7 @@ st.title("⛳ Actitud Golf Short Game Master")
 
 # CONFIGURACIÓN: Pega aquí el link de tu FORMULARIO
 # (Lo ideal es que usemos una URL de envío que te enseñaré a sacar)
-URL_FORM = "TU_LINK_DE_GOOGLE_FORM_AQUI"
+URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSfsrH4ZjEkLpxL2Rjs7F7cpkdNaTTToupAM8AfySCSNVu5eXQ/viewform?usp=dialog"
 
 with st.sidebar:
     modo = st.radio("Entorno:", ["Práctica", "Juego en Cancha"])
