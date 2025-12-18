@@ -4,14 +4,13 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
-# Configuración para móvil
+# Configuración móvil
 st.set_page_config(page_title="Actitud Golf", page_icon="⛳", layout="centered")
 
-# CONFIGURACIÓN DE CONEXIÓN
 URL = "https://script.google.com/macros/s/AKfycbwCue3cavrYDkwxesQrcetNM8qId7OiCh5Ez-qoJuCnSULsvWAWPlezpNao6tCsLU1k/exec"
 S_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
 
-# LISTA DE ALUMNOS (Edita aquí tus 20 nombres)
+# LISTA DE ALUMNOS (Edita aquí)
 JUGADORES = ["Seleccionar...", "Agustin", "Andres", "Carlos Garcia", "Maria Lopez"]
 
 if 'user' not in st.session_state:
@@ -20,8 +19,7 @@ if 'user' not in st.session_state:
 # --- LOGIN ---
 if st.session_state['user'] is None:
     st.title("⛳ Actitud Golf")
-    st.write("Identifícate:")
-    sel = st.selectbox("", JUGADORES)
+    sel = st.selectbox("Identifícate:", JUGADORES)
     if st.button("ENTRAR", use_container_width=True):
         if sel != "Seleccionar...":
             st.session_state['user'] = sel
@@ -49,8 +47,7 @@ def leer(hoja):
 
 # --- CARGA DE DATOS ---
 if menu == "Cargar Datos":
-    t1, t2 = st.tabs(["🎯 PUTT CORTO", "📏 LAG PUTTING"])
-    
+    t1, t2 = st.tabs(["🎯 PUTT CORTO", "📏 LAG"])
     with t1:
         if modo == "Práctica":
             d = st.selectbox("Distancia:", ["35cm", "70cm", "1m", "1.5m", "2m"])
@@ -59,14 +56,13 @@ if menu == "Cargar Datos":
             if st.button("GUARDAR PRÁCTICA", use_container_width=True):
                 js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Putt Corto","subcategoria":d,"intentos":i,"aciertos":a}
                 requests.post(URL, json=js)
-                st.success("¡Datos guardados!")
+                st.success("¡Guardado!")
         else:
-            st.subheader("Putt en Cancha")
-            can = st.text_input("Club / Cancha:", placeholder="Ej: Olivos")
+            can = st.text_input("Cancha:", placeholder="Ej: Olivos")
             ho = st.number_input("Hoyo:", 1, 18, 1)
             dist_c = st.selectbox("Distancia aprox:", ["35cm", "70cm", "1m", "1.5m", "2m", "Más"])
             res_c = st.selectbox("Resultado:", ["Emboqué", "Falle: Corta", "Falle: Derecha", "Falle: Izquierda", "Falle: Larga"])
-            if st.button("REGISTRAR PUTT CANCHA", use_container_width=True):
+            if st.button("REGISTRAR EN CANCHA", use_container_width=True):
                 js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Putt Corto","cancha":can,"hoyo":ho,"distancia":dist_c,"resultado":res_c}
                 requests.post(URL, json=js)
                 st.success("¡Hoyo registrado!")
@@ -81,11 +77,10 @@ if menu == "Cargar Datos":
                 if (v1+v2+v3==10):
                     js = {"nombre":user,"fecha":fecha,"entorno":modo,"tipo":"Lag Putting","subcategoria":ran,"menos de 1 metro":v1,"entre un metro y un metro y medio":v2,"mas de un metro y medio":v3}
                     requests.post(URL, json=js)
-                    st.success("¡Sesión guardada!")
+                    st.success("¡Guardado!")
                 else: st.error("La suma debe ser 10")
         else:
-            st.subheader("Lag en Cancha")
-            can2 = st.text_input("Cancha:", placeholder="Nombre del club", key="c2")
+            can2 = st.text_input("Cancha:", key="c2")
             ho2 = st.number_input("Hoyo:", 1, 18, 1, key="h2")
             dist_l = st.number_input("Metros al hoyo:", 3.0, 50.0, 10.0)
             res2 = st.selectbox("Resultado:", ["Emboqué", "Menos de 1m", "Entre 1m y 1.5m", "Mas de 1.5m"])
@@ -97,20 +92,11 @@ if menu == "Cargar Datos":
 # --- ESTADÍSTICAS ---
 else:
     st.header(f"📊 Reporte: {user}")
-    
-    # Bloque Práctica
-    st.divider()
-    st.subheader("🛠️ Rendimiento en Práctica")
     df1 = leer("Putt_Corto")
     if not df1.empty:
+        st.subheader("🛠️ Práctica: Putt Corto")
         res = df1.groupby('Subcategoria').agg({'Aciertos':'sum','Intentos':'sum'}).reset_index()
         res['%'] = (res['Aciertos']/res['Intentos'])*100
-        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], title="Efectividad Corto %"), use_container_width=True)
+        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], text='%'), use_container_width=True)
     
-    df2 = leer("Lag_Putting")
-    if not df2.empty:
-        cols = ["Menos De 1 Metro", "Entre Un Metro Y Un Metro Y Medio", "Mas De Un Metro Y Medio"]
-        existentes = [c for c in cols if c in df2.columns]
-        if existentes:
-            vals = [df2[c].sum() for c in existentes]
-            st.plotly_chart(px
+    df
