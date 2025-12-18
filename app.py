@@ -7,7 +7,7 @@ from datetime import datetime
 st.set_page_config(page_title="Actitud Golf Pro", page_icon="⛳", layout="wide")
 
 # CONFIGURACIÓN DE ENLACES (URL ACTUALIZADA)
-URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzmQeqS36bypnMzfwk0p_SZY8M_VA3RVQ3cdgWaR3x7MqrYg4H6Y0OJZ4dbF3rwbSg/exec"
+URL_WEB_APP = "https://script.google.com/macros/s/AKfycbz8V6GLDdtc6UH122mYl1rNrwx25UWwuwyZQ7Qw6saw1i19Xpy81ovjexTK5tQCuwIj/exec"
 SHEET_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
 
 def leer_hoja(sheet_name):
