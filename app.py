@@ -40,7 +40,8 @@ def leer(hoja):
     try:
         u = f"https://docs.google.com/spreadsheets/d/{S_ID}/gviz/tq?tqx=out:csv&sheet={hoja}"
         df = pd.read_csv(u)
-        df.columns = df.columns.str.strip().str.title()
+        # Limpieza total de encabezados
+        df.columns = df.columns.str.strip().str.title().str.replace('ì', 'i').str.replace('í', 'i')
         return df[df['Nombre'] == user] if 'Nombre' in df.columns else pd.DataFrame()
     except:
         return pd.DataFrame()
@@ -92,11 +93,35 @@ if menu == "Cargar Datos":
 # --- ESTADÍSTICAS ---
 else:
     st.header(f"📊 Reporte: {user}")
+    
+    # --- PRÁCTICA ---
     df1 = leer("Putt_Corto")
-    if not df1.empty:
-        st.subheader("🛠️ Práctica: Putt Corto")
+    if not df1.empty and 'Subcategoria' in df1.columns:
+        st.subheader("🛠️ Práctica: Corto")
         res = df1.groupby('Subcategoria').agg({'Aciertos':'sum','Intentos':'sum'}).reset_index()
         res['%'] = (res['Aciertos']/res['Intentos'])*100
-        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], text='%'), use_container_width=True)
+        st.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], text_auto='.1f'), use_container_width=True)
     
-    df
+    df2 = leer("Lag_Putting")
+    if not df2.empty:
+        st.subheader("🛠️ Práctica: Lag")
+        cols = ["Menos De 1 Metro", "Entre Un Metro Y Un Metro Y Medio", "Mas De Un Metro Y Medio"]
+        existentes = [c for c in cols if c in df2.columns]
+        if existentes:
+            vals = [df2[c].sum() for c in existentes]
+            st.plotly_chart(px.pie(values=vals, names=existentes, hole=0.4), use_container_width=True)
+
+    # --- CANCHA ---
+    st.divider()
+    df3 = leer("Putt_Corto_Cancha")
+    if not df3.empty and 'Resultado' in df3.columns:
+        st.subheader("🏌️ Cancha: Fallos")
+        st.plotly_chart(px.histogram(df3, x="Resultado"), use_container_width=True)
+    
+    df4 = leer("Lag_Cancha")
+    if not df4.empty and 'Resultado' in df4.columns:
+        st.subheader("🏌️ Cancha: Lag")
+        st.plotly_chart(px.pie(df4, names="Resultado"), use_container_width=True)
+    
+    if df1.empty and df2.empty and df3.empty and df4.empty:
+        st.warning("No se encontraron datos para este jugador. ¡Empieza a cargar tus sesiones!")
