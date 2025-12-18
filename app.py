@@ -6,7 +6,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Actitud Golf Pro", page_icon="⛳", layout="wide")
 
-# CONFIGURACIÓN DE ENLACES
+# CONFIGURACIÓN
 URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwT40gujHrmqKIgDe5ckyNLCdW8CK5Cv2BF5E0eT0Hspr-vpyMSNbxiqyFoVSFVs-Ka/exec"
 SHEET_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
 
@@ -14,8 +14,7 @@ def leer_hoja(sheet_name):
     try:
         url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
         df = pd.read_csv(url)
-        # LIMPIEZA DE COLUMNAS: Quitamos espacios y tildes raras
-        df.columns = df.columns.str.strip().str.replace('ì', 'i').str.replace('í', 'i')
+        df.columns = df.columns.str.strip() # Limpia espacios extra en los títulos
         return df
     except:
         return pd.DataFrame()
@@ -38,84 +37,94 @@ if menu == "Cargar Datos":
             if st.button("Guardar Práctica Corto"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "subcategoria": dist, "intentos": intentos, "aciertos": aciertos}
                 requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Guardado!")
+                st.success("¡Putt Corto Guardado!")
                 st.balloons()
         else:
             cancha = st.text_input("Cancha:")
             hoyo = st.number_input("Hoyo:", 1, 18, 1)
             dist_c = st.selectbox("Distancia aprox:", ["35cm", "70cm", "1m", "1.5m", "2m", "Más"])
             res_c = st.selectbox("Resultado:", ["Emboqué", "Falle: Corta en linea", "Falle: Corta derecha", "Falle: Corta izquierda", "Falle: Larga en linea", "Falle: Larga derecha", "Falle: Larga izquierda"])
-            rut = st.radio("¿Rutina?", ["Sí", "No"])
             if st.button("Guardar Putt Cancha"):
-                datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "cancha": cancha, "hoyo": hoyo, "distancia": dist_c, "resultado": res_c, "rutina": rut, "foco": "Sí", "comentarios": ""}
+                datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "cancha": cancha, "hoyo": hoyo, "distancia": dist_c, "resultado": res_c, "rutina": "Sí", "foco": "Sí"}
                 requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Registrado!")
+                st.success("¡Putt en Cancha Registrado!")
                 st.balloons()
 
     with tab2:
         if modo == "Práctica":
             rango = st.selectbox("Rango:", ["Lag A (2.5-8m)", "Lag B (8.5-15m)", "Lag C (15.5-25m)"])
             col1, col2, col3 = st.columns(3)
-            cerca = col1.number_input("< 1m", 0, 10, 0)
-            media = col2.number_input("1m a 1.5m", 0, 10, 0)
-            lejos = col3.number_input("> 1.5m", 0, 10, 0)
+            
+            # Títulos exactos de tu Excel
+            t1 = "menos de 1 metro"
+            t2 = "un metro y medio"
+            t3 = "mas de un metro y medio"
+            
+            v1 = col1.number_input(t1, 0, 10, 0)
+            v2 = col2.number_input(t2, 0, 10, 0)
+            v3 = col3.number_input(t3, 0, 10, 0)
+            
             if st.button("Guardar Práctica Lag"):
-                if (cerca+media+lejos == 10):
-                    datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "subcategoria": rango, "cerca": cerca, "media": media, "lejos": lejos}
+                if (v1 + v2 + v3 == 10):
+                    # ENVIAMOS LAS LLAVES EXACTAS AL APPS SCRIPT
+                    datos = {
+                        "fecha": str(fecha), 
+                        "entorno": modo, 
+                        "tipo": "Lag Putting", 
+                        "subcategoria": rango, 
+                        "menos de 1 metro": v1, 
+                        "un metro y medio": v2, 
+                        "mas de un metro y medio": v3
+                    }
                     requests.post(URL_WEB_APP, json=datos)
-                    st.success("¡Guardado!")
+                    st.success("¡Sesión de Lag Guardada!")
                     st.balloons()
                 else:
                     st.error("La suma debe ser 10")
         else:
             cancha_l = st.text_input("Cancha:", key="cl")
-            dist_l = st.number_input("Metros:", 1.0, 50.0, 10.0)
+            dist_l = st.number_input("Metros al hoyo:", 1.0, 50.0, 10.0)
             res_l = st.selectbox("Resultado:", ["Emboqué", "a 50cm", "a 1m", "a 1.5m", "más de 1.5m"])
             if st.button("Guardar Lag Cancha"):
-                datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "cancha": cancha_l, "distancia": dist_l, "resultado": res_l, "rutina": "Sí", "foco": "Sí", "comentarios": ""}
+                datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "cancha": cancha_l, "distancia": dist_l, "resultado": res_l}
                 requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Registrado!")
+                st.success("¡Lag en Cancha Registrado!")
                 st.balloons()
 
-else: # SECCIÓN DE ESTADÍSTICAS
+else: # ESTADÍSTICAS
     st.header("📊 Análisis de Rendimiento")
     
-    # 1. Putt Corto Práctica
+    # 1. Putt Corto
     df_pc = leer_hoja("Putt_Corto")
-    if not df_pc.empty and 'Subcategoria' in df_pc.columns:
+    if not df_pc.empty:
         st.subheader("🎯 Efectividad Putt Corto (Práctica)")
-        
-        df_resumen = df_pc.groupby('Subcategoria').agg({'Aciertos': 'sum', 'Intentos': 'sum'}).reset_index()
-        df_resumen['%'] = (df_resumen['Aciertos'] / df_resumen['Intentos']) * 100
-        
-        # --- NUEVA LÓGICA DE ORDENAMIENTO ---
-        orden_distancias = ["35cm", "70cm", "1m", "1.5m", "2m"]
-        # Convertimos la columna a 'Categorical' con el orden deseado
-        df_resumen['Subcategoria'] = pd.Categorical(df_resumen['Subcategoria'], categories=orden_distancias, ordered=True)
-        df_resumen = df_resumen.sort_values('Subcategoria')
-        
-        fig = px.bar(df_resumen, x='Subcategoria', y='%', color='Subcategoria', 
-                     range_y=[0, 100], text=df_resumen['%'].apply(lambda x: f'{x:.1f}%'),
-                     category_orders={"Subcategoria": orden_distancias}) # Refuerza el orden en el gráfico
-        st.plotly_chart(fig)
-    else:
-        st.info("Carga datos en Putt_Corto para ver este gráfico.")
+        df_pc.columns = [c.replace('Subcategorìa', 'Subcategoria') for c in df_pc.columns]
+        if 'Subcategoria' in df_pc.columns:
+            df_resumen = df_pc.groupby('Subcategoria').agg({'Aciertos': 'sum', 'Intentos': 'sum'}).reset_index()
+            df_resumen['%'] = (df_resumen['Aciertos'] / df_resumen['Intentos']) * 100
+            orden = ["35cm", "70cm", "1m", "1.5m", "2m"]
+            df_resumen['Subcategoria'] = pd.Categorical(df_resumen['Subcategoria'], categories=orden, ordered=True)
+            fig = px.bar(df_resumen.sort_values('Subcategoria'), x='Subcategoria', y='%', range_y=[0,105], 
+                         text=df_resumen['%'].apply(lambda x: f'{x:.1f}%'), color='Subcategoria')
+            st.plotly_chart(fig)
 
-    # 2. Lag Putting Práctica
+    # 2. Lag Putting
     df_lp = leer_hoja("Lag_Putting")
-    if not df_lp.empty and 'Cerca' in df_lp.columns:
+    if not df_lp.empty:
         st.subheader("📏 Distribución Lag Putting (Práctica)")
-        totales = [df_lp['Cerca'].sum(), df_lp['Media'].sum(), df_lp['Lejos'].sum()]
-        fig2 = px.pie(values=totales, names=['< 1m', '1m a 1.5m', '> 1.5m'], title="Control de Distancia Total")
-        st.plotly_chart(fig2)
-
-    # 3. Errores en Cancha
-    df_pcc = leer_hoja("Putt_Corto_Cancha")
-    if not df_pcc.empty:
-        st.subheader("🚩 Fallos en Cancha")
-        fallos = df_pcc[df_pcc['Resultado'] != "Emboqué"]
-        if not fallos.empty:
-            fig3 = px.histogram(fallos, x='Resultado')
-            st.plotly_chart(fig3)
+        t1, t2, t3 = "menos de 1 metro", "un metro y medio", "mas de un metro y medio"
+        
+        # Convertimos a número por seguridad
+        for col in [t1, t2, t3]:
+            if col in df_lp.columns:
+                df_lp[col] = pd.to_numeric(df_lp[col], errors='coerce').fillna(0)
+        
+        s1 = df_lp[t1].sum() if t1 in df_lp.columns else 0
+        s2 = df_lp[t2].sum() if t2 in df_lp.columns else 0
+        s3 = df_lp[t3].sum() if t3 in df_lp.columns else 0
+        
+        if (s1 + s2 + s3) > 0:
+            fig2 = px.pie(values=[s1, s2, s3], names=[t1, t2, t3], hole=0.4, title="Control de Distancia Total")
+            st.plotly_chart(fig2)
         else:
-            st.write("¡Sin fallos en cancha todavía!")
+            st.info("No hay datos de Lag todavía.")
