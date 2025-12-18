@@ -2,18 +2,22 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-st.set_page_config(page_title="Actitud Golf", page_icon="⛳")
+# Configuración de página
+st.set_page_config(page_title="Actitud Golf Master", page_icon="⛳")
 
-# Configuración del Formulario (Envío automático)
-# Esta es la URL de envío "invisible"
-FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfsrH4ZjEkLpxL2Rjs7F7cpkdNaTTToupAM8AfySCSNVu5eXQ/formResponse"
+# --- TU URL DE APPS SCRIPT ---
+URL_WEB_APP = "https://script.google.com/macros/s/AKfycbyyy1flc16rL4L0dKk_EEwhIvqXe6d79ZS0HNf8TYV91WJZSiG-lO2_qGcKUts8y1fj/exec"
 
 st.title("⛳ Actitud Golf Short Game")
+st.markdown("---")
 
+# Menú Lateral
 with st.sidebar:
+    st.header("Sesión")
     modo = st.radio("Entorno:", ["Práctica", "Juego en Cancha"])
     fecha = st.date_input("Fecha", datetime.now())
 
+# Pestañas de juego
 tab1, tab2 = st.tabs(["🎯 Putt Corto", "📏 Lag Putting"])
 
 with tab1:
@@ -22,24 +26,28 @@ with tab1:
     intentos = c1.number_input("Intentos", 1, 100, 10)
     aciertos = c2.number_input("Aciertos", 0, intentos, 0)
     
-    if st.button("💾 Guardar en Base de Datos"):
-        # Estos son los códigos de tus preguntas (ID sugeridos)
-        # Nota: Si el dato no llega al Excel, avísame para enseñarte a sacar los ID exactos
-        payload = {
-            "entry.2001556948": str(fecha),        # Fecha
-            "entry.1045678910": modo,              # Entorno
-            "entry.3004567811": "Putt Corto",      # Tipo
-            "entry.4005678912": dist,              # Subcategoria
-            "entry.5006789013": str(intentos),     # Intentos
-            "entry.6007890114": str(aciertos)      # Aciertos
+    if st.button("💾 Guardar Registro"):
+        # Preparamos los datos EXACTAMENTE como los espera el Script
+        datos = {
+            "fecha": str(fecha),
+            "entorno": modo,
+            "tipo": "Putt Corto",
+            "subcategoria": dist,
+            "intentos": intentos,
+            "aciertos": aciertos
         }
         
-        try:
-            requests.post(FORM_URL, data=payload)
-            st.success("¡Datos enviados con éxito!")
-            st.balloons()
-        except:
-            st.error("Error de conexión, pero los datos están aquí. Intenta de nuevo.")
+        with st.spinner('Enviando a Google Sheets...'):
+            try:
+                # Enviamos los datos
+                response = requests.post(URL_WEB_APP, json=datos)
+                if response.status_code == 200:
+                    st.success("¡Logrado! Revisa tu Excel.")
+                    st.balloons()
+                else:
+                    st.error("El servidor respondió con un error. Revisa los permisos del Script.")
+            except Exception as e:
+                st.error(f"Error de conexión: {e}")
 
 with tab2:
-    st.info("Pestaña de Lag Putting lista para configurar.")
+    st.write("Configuración de Lag Putting lista para usar pronto.")
