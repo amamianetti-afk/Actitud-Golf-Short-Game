@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Actitud Golf Master", page_icon="⛳")
 
 # --- TU URL DE APPS SCRIPT ---
-URL_WEB_APP = "https://script.google.com/macros/s/AKfycbyyy1flc16rL4L0dKk_EEwhIvqXe6d79ZS0HNf8TYV91WJZSiG-lO2_qGcKUts8y1fj/exec"
+URL_WEB_APP = "https://script.google.com/macros/s/AKfycbz7qgMMrGkR9LQ4TqNr87OW5wm0z_JIHvEWYXueRdY7N51dEisbEReSdADc8TMT31go/exec"
 
 st.title("⛳ Actitud Golf Short Game")
 st.markdown("---")
