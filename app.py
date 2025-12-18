@@ -6,15 +6,14 @@ from datetime import datetime
 
 st.set_page_config(page_title="Actitud Golf Pro", page_icon="⛳", layout="wide")
 
-# CONFIGURACIÓN DE ENLACES (URL ACTUALIZADA)
-URL_WEB_APP = "https://script.google.com/macros/s/AKfycbz8V6GLDdtc6UH122mYl1rNrwx25UWwuwyZQ7Qw6saw1i19Xpy81ovjexTK5tQCuwIj/exec"
+# CONFIGURACIÓN (Verifica que esta URL sea la de la NUEVA IMPLEMENTACIÓN)
+URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzmQeqS36bypnMzfwk0p_SZY8M_VA3RVQ3cdgWaR3x7MqrYg4H6Y0OJZ4dbF3rwbSg/exec"
 SHEET_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
 
 def leer_hoja(sheet_name):
     try:
         url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
         df = pd.read_csv(url)
-        # Limpieza de encabezados para evitar errores por espacios o tildes
         df.columns = df.columns.str.strip().str.replace('ì', 'i').str.replace('í', 'i')
         return df
     except:
@@ -37,9 +36,12 @@ if menu == "Cargar Datos":
             aciertos = c2.number_input("Aciertos", 0, intentos, 0)
             if st.button("Guardar Práctica Corto"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "subcategoria": dist, "intentos": intentos, "aciertos": aciertos}
-                requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Putt Corto Guardado!")
-                st.balloons()
+                res = requests.post(URL_WEB_APP, json=datos)
+                if res.status_code == 200:
+                    st.success("¡Putt Corto Guardado!")
+                    st.balloons()
+                else:
+                    st.error(f"Error al guardar: {res.text}")
         else:
             cancha = st.text_input("Cancha:")
             hoyo = st.number_input("Hoyo:", 1, 18, 1)
@@ -47,18 +49,17 @@ if menu == "Cargar Datos":
             res_c = st.selectbox("Resultado:", ["Emboqué", "Falle: Corta en linea", "Falle: Corta derecha", "Falle: Corta izquierda", "Falle: Larga en linea", "Falle: Larga derecha", "Falle: Larga izquierda"])
             if st.button("Guardar Putt Cancha"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "cancha": cancha, "hoyo": hoyo, "distancia": dist_c, "resultado": res_c, "rutina": "Sí", "foco": "Sí"}
-                requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Putt en Cancha Registrado!")
-                st.balloons()
+                res = requests.post(URL_WEB_APP, json=datos)
+                if res.status_code == 200:
+                    st.success("¡Registrado!")
+                    st.balloons()
 
     with tab2:
         if modo == "Práctica":
             rango = st.selectbox("Rango:", ["Lag A (2.5-8m)", "Lag B (8.5-15m)", "Lag C (15.5-25m)"])
             col1, col2, col3 = st.columns(3)
             
-            # Títulos exactos de tu Excel para que la App escriba bien
             t1, t2, t3 = "menos de 1 metro", "un metro y medio", "mas de un metro y medio"
-            
             v1 = col1.number_input(t1, 0, 10, 0)
             v2 = col2.number_input(t2, 0, 10, 0)
             v3 = col3.number_input(t3, 0, 10, 0)
@@ -69,9 +70,12 @@ if menu == "Cargar Datos":
                         "fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "subcategoria": rango,
                         "menos de 1 metro": v1, "un metro y medio": v2, "mas de un metro y medio": v3
                     }
-                    requests.post(URL_WEB_APP, json=datos)
-                    st.success("¡Sesión de Lag Guardada!")
-                    st.balloons()
+                    res = requests.post(URL_WEB_APP, json=datos)
+                    if "Éxito" in res.text or res.status_code == 200:
+                        st.success("¡Sesión de Lag Guardada en Excel!")
+                        st.balloons()
+                    else:
+                        st.error(f"Google rechazó los datos: {res.text}")
                 else:
                     st.error("La suma debe ser 10")
         else:
@@ -81,13 +85,13 @@ if menu == "Cargar Datos":
             if st.button("Guardar Lag Cancha"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "cancha": cancha_l, "distancia": dist_l, "resultado": res_l}
                 requests.post(URL_WEB_APP, json=datos)
-                st.success("¡Lag en Cancha Registrado!")
+                st.success("¡Registrado!")
 
 else: # ESTADÍSTICAS
     st.header("📊 Análisis de Rendimiento")
     
-    # 1. Gráfico de Putt Corto
-    df_pc = leer_ho_ja("Putt_Corto")
+    # 1. Putt Corto
+    df_pc = leer_hoja("Putt_Corto")
     if not df_pc.empty:
         st.subheader("🎯 Efectividad Putt Corto (Práctica)")
         df_pc.columns = [c.replace('Subcategoria', 'Subcategoria') for c in df_pc.columns]
@@ -100,13 +104,15 @@ else: # ESTADÍSTICAS
                          text=df_resumen['%'].apply(lambda x: f'{x:.1f}%'), color='Subcategoria')
             st.plotly_chart(fig)
 
-    # 2. Gráfico de Lag Putting
+    # 2. Lag Putting
     df_lp = leer_hoja("Lag_Putting")
     if not df_lp.empty:
         st.subheader("📏 Distribución Lag Putting (Práctica)")
         t1, t2, t3 = "menos de 1 metro", "un metro y medio", "mas de un metro y medio"
+        for col in [t1, t2, t3]:
+            if col in df_lp.columns:
+                df_lp[col] = pd.to_numeric(df_lp[col], errors='coerce').fillna(0)
         
-        # Aseguramos que los nombres coincidan con los del Excel
         s1 = df_lp[t1].sum() if t1 in df_lp.columns else 0
         s2 = df_lp[t2].sum() if t2 in df_lp.columns else 0
         s3 = df_lp[t3].sum() if t3 in df_lp.columns else 0
@@ -115,4 +121,4 @@ else: # ESTADÍSTICAS
             fig2 = px.pie(values=[s1, s2, s3], names=[t1, t2, t3], hole=0.4)
             st.plotly_chart(fig2)
         else:
-            st.info("Aún no hay datos cargados en Lag Putting.")
+            st.info("Aún no hay datos de Lag cargados correctamente.")
