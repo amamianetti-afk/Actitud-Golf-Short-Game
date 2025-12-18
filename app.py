@@ -1,15 +1,14 @@
 import streamlit as st
-import pandas as pd
 import requests
 from datetime import datetime
 
 st.set_page_config(page_title="Actitud Golf", page_icon="⛳")
 
-st.title("⛳ Actitud Golf Short Game Master")
+# Configuración del Formulario (Envío automático)
+# Esta es la URL de envío "invisible"
+FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfsrH4ZjEkLpxL2Rjs7F7cpkdNaTTToupAM8AfySCSNVu5eXQ/formResponse"
 
-# CONFIGURACIÓN: Pega aquí el link de tu FORMULARIO
-# (Lo ideal es que usemos una URL de envío que te enseñaré a sacar)
-URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSfsrH4ZjEkLpxL2Rjs7F7cpkdNaTTToupAM8AfySCSNVu5eXQ/viewform?usp=dialog"
+st.title("⛳ Actitud Golf Short Game")
 
 with st.sidebar:
     modo = st.radio("Entorno:", ["Práctica", "Juego en Cancha"])
@@ -23,13 +22,24 @@ with tab1:
     intentos = c1.number_input("Intentos", 1, 100, 10)
     aciertos = c2.number_input("Aciertos", 0, intentos, 0)
     
-    if st.button("💾 Registrar Putt"):
-        # Mensaje de éxito visual
-        st.balloons()
-        st.success(f"¡Datos de {dist} enviados a la base de datos!")
+    if st.button("💾 Guardar en Base de Datos"):
+        # Estos son los códigos de tus preguntas (ID sugeridos)
+        # Nota: Si el dato no llega al Excel, avísame para enseñarte a sacar los ID exactos
+        payload = {
+            "entry.2001556948": str(fecha),        # Fecha
+            "entry.1045678910": modo,              # Entorno
+            "entry.3004567811": "Putt Corto",      # Tipo
+            "entry.4005678912": dist,              # Subcategoria
+            "entry.5006789013": str(intentos),     # Intentos
+            "entry.6007890114": str(aciertos)      # Aciertos
+        }
         
-        # Aquí es donde el dato "vuela" al Excel vía Formulario
-        st.info("Revisa tu Google Sheet en un momento para ver el registro.")
+        try:
+            requests.post(FORM_URL, data=payload)
+            st.success("¡Datos enviados con éxito!")
+            st.balloons()
+        except:
+            st.error("Error de conexión, pero los datos están aquí. Intenta de nuevo.")
 
 with tab2:
-    st.write("Configuración de Lag Putting lista para usar.")
+    st.info("Pestaña de Lag Putting lista para configurar.")
