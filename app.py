@@ -14,7 +14,7 @@ def leer_hoja(sheet_name):
     try:
         url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
         df = pd.read_csv(url)
-        # LIMPIEZA DE COLUMNAS: Quitamos espacios y tildes raras para que el código no falle
+        # LIMPIEZA DE COLUMNAS: Quitamos espacios y tildes raras
         df.columns = df.columns.str.strip().str.replace('ì', 'i').str.replace('í', 'i')
         return df
     except:
@@ -84,20 +84,29 @@ else: # SECCIÓN DE ESTADÍSTICAS
     df_pc = leer_hoja("Putt_Corto")
     if not df_pc.empty and 'Subcategoria' in df_pc.columns:
         st.subheader("🎯 Efectividad Putt Corto (Práctica)")
+        
         df_resumen = df_pc.groupby('Subcategoria').agg({'Aciertos': 'sum', 'Intentos': 'sum'}).reset_index()
         df_resumen['%'] = (df_resumen['Aciertos'] / df_resumen['Intentos']) * 100
+        
+        # --- NUEVA LÓGICA DE ORDENAMIENTO ---
+        orden_distancias = ["35cm", "70cm", "1m", "1.5m", "2m"]
+        # Convertimos la columna a 'Categorical' con el orden deseado
+        df_resumen['Subcategoria'] = pd.Categorical(df_resumen['Subcategoria'], categories=orden_distancias, ordered=True)
+        df_resumen = df_resumen.sort_values('Subcategoria')
+        
         fig = px.bar(df_resumen, x='Subcategoria', y='%', color='Subcategoria', 
-                     range_y=[0, 100], text=df_resumen['%'].apply(lambda x: f'{x:.1f}%'))
+                     range_y=[0, 100], text=df_resumen['%'].apply(lambda x: f'{x:.1f}%'),
+                     category_orders={"Subcategoria": orden_distancias}) # Refuerza el orden en el gráfico
         st.plotly_chart(fig)
     else:
-        st.info("No hay datos suficientes en Putt_Corto.")
+        st.info("Carga datos en Putt_Corto para ver este gráfico.")
 
     # 2. Lag Putting Práctica
     df_lp = leer_hoja("Lag_Putting")
     if not df_lp.empty and 'Cerca' in df_lp.columns:
         st.subheader("📏 Distribución Lag Putting (Práctica)")
         totales = [df_lp['Cerca'].sum(), df_lp['Media'].sum(), df_lp['Lejos'].sum()]
-        fig2 = px.pie(values=totales, names=['< 1m', '1m a 1.5m', '> 1.5m'], title="Control de Distancia")
+        fig2 = px.pie(values=totales, names=['< 1m', '1m a 1.5m', '> 1.5m'], title="Control de Distancia Total")
         st.plotly_chart(fig2)
 
     # 3. Errores en Cancha
