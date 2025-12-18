@@ -67,12 +67,30 @@ else: # SECCIÓN DE ESTADÍSTICAS
     st.header("📊 Análisis de Rendimiento")
     
     try:
-        # 1. Putt Corto Práctica
+        # 1. Putt Corto Práctica (CORREGIDO PARA MOSTRAR 100%)
         df_pc = leer_hoja("Putt_Corto")
         if not df_pc.empty:
             st.subheader("🎯 Efectividad Putt Corto (Práctica)")
-            df_pc['%'] = (df_pc['Aciertos'] / df_pc['Intentos']) * 100
-            fig = px.bar(df_pc, x='Subcategorìa', y='%', color='Subcategorìa', title="Efectividad por Distancia")
+            
+            # Agrupamos por distancia y sumamos aciertos e intentos totales
+            df_resumen = df_pc.groupby('Subcategorìa').agg({
+                'Aciertos': 'sum',
+                'Intentos': 'sum'
+            }).reset_index()
+            
+            # Calculamos el % real sobre el total
+            df_resumen['% Efectividad'] = (df_resumen['Aciertos'] / df_resumen['Intentos']) * 100
+            
+            # Creamos el gráfico con el nuevo %
+            fig = px.bar(
+                df_resumen, 
+                x='Subcategorìa', 
+                y='% Efectividad', 
+                color='Subcategorìa',
+                range_y=[0, 100],  # Forzamos que el eje llegue a 100
+                text=df_resumen['% Efectividad'].apply(lambda x: f'{x:.1f}%'), # Muestra el número arriba
+                title="Promedio de Efectividad por Distancia"
+            )
             st.plotly_chart(fig)
 
         # 2. Lag Putting Práctica
