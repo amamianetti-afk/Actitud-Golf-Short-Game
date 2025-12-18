@@ -7,8 +7,8 @@ from datetime import datetime
 st.set_page_config(page_title="Actitud Golf Pro", page_icon="⛳", layout="wide")
 
 # CONFIGURACIÓN
-URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwT40gujHrmqKIgDe5ckyNLCdW8CK5Cv2BF5E0eT0Hspr-vpyMSNbxiqyFoVSFVs-Ka/exec"
-SHEET_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
+URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzmQeqS36bypnMzfwk0p_SZY8M_VA3RVQ3cdgWaR3x7MqrYg4H6Y0OJZ4dbF3rwbSg/exec"
+SHEET_ID = "AKfycbzmQeqS36bypnMzfwk0p_SZY8M_VA3RVQ3cdgWaR3x7MqrYg4H6Y0OJZ4dbF3rwbSg"
 
 def leer_hoja(sheet_name):
     try:
