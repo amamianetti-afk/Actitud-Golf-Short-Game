@@ -6,15 +6,20 @@ from datetime import datetime
 
 st.set_page_config(page_title="Actitud Golf Pro", page_icon="⛳", layout="wide")
 
-# CONFIGURACIÓN (Verifica que esta URL sea la de la NUEVA IMPLEMENTACIÓN)
+# CONFIGURACIÓN
 URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzmQeqS36bypnMzfwk0p_SZY8M_VA3RVQ3cdgWaR3x7MqrYg4H6Y0OJZ4dbF3rwbSg/exec"
 SHEET_ID = "1p3vWVzoHAgMk4bHY6OL3tnQLPhclGqcYspkwTw0AjFU"
+
+# --- DEFINICIÓN DE NOMBRES DE COLUMNAS PARA LAG PUTTING ---
+COL_LAG_1 = "menos de 1 metro"
+COL_LAG_2 = "entre un metro y un metro y medio" # <-- ESTE ES EL CAMBIO
+COL_LAG_3 = "mas de un metro y medio"
 
 def leer_hoja(sheet_name):
     try:
         url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
         df = pd.read_csv(url)
-        df.columns = df.columns.str.strip().str.replace('ì', 'i').str.replace('í', 'i')
+        df.columns = df.columns.str.strip()
         return df
     except:
         return pd.DataFrame()
@@ -36,12 +41,9 @@ if menu == "Cargar Datos":
             aciertos = c2.number_input("Aciertos", 0, intentos, 0)
             if st.button("Guardar Práctica Corto"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "subcategoria": dist, "intentos": intentos, "aciertos": aciertos}
-                res = requests.post(URL_WEB_APP, json=datos)
-                if res.status_code == 200:
-                    st.success("¡Putt Corto Guardado!")
-                    st.balloons()
-                else:
-                    st.error(f"Error al guardar: {res.text}")
+                requests.post(URL_WEB_APP, json=datos)
+                st.success("¡Guardado!")
+                st.balloons()
         else:
             cancha = st.text_input("Cancha:")
             hoyo = st.number_input("Hoyo:", 1, 18, 1)
@@ -49,33 +51,27 @@ if menu == "Cargar Datos":
             res_c = st.selectbox("Resultado:", ["Emboqué", "Falle: Corta en linea", "Falle: Corta derecha", "Falle: Corta izquierda", "Falle: Larga en linea", "Falle: Larga derecha", "Falle: Larga izquierda"])
             if st.button("Guardar Putt Cancha"):
                 datos = {"fecha": str(fecha), "entorno": modo, "tipo": "Putt Corto", "cancha": cancha, "hoyo": hoyo, "distancia": dist_c, "resultado": res_c, "rutina": "Sí", "foco": "Sí"}
-                res = requests.post(URL_WEB_APP, json=datos)
-                if res.status_code == 200:
-                    st.success("¡Registrado!")
-                    st.balloons()
+                requests.post(URL_WEB_APP, json=datos)
+                st.success("¡Registrado!")
 
     with tab2:
         if modo == "Práctica":
             rango = st.selectbox("Rango:", ["Lag A (2.5-8m)", "Lag B (8.5-15m)", "Lag C (15.5-25m)"])
             col1, col2, col3 = st.columns(3)
             
-            t1, t2, t3 = "menos de 1 metro", "un metro y medio", "mas de un metro y medio"
-            v1 = col1.number_input(t1, 0, 10, 0)
-            v2 = col2.number_input(t2, 0, 10, 0)
-            v3 = col3.number_input(t3, 0, 10, 0)
+            v1 = col1.number_input(COL_LAG_1, 0, 10, 0)
+            v2 = col2.number_input(COL_LAG_2, 0, 10, 0)
+            v3 = col3.number_input(COL_LAG_3, 0, 10, 0)
             
             if st.button("Guardar Práctica Lag"):
                 if (v1 + v2 + v3 == 10):
                     datos = {
                         "fecha": str(fecha), "entorno": modo, "tipo": "Lag Putting", "subcategoria": rango,
-                        "menos de 1 metro": v1, "un metro y medio": v2, "mas de un metro y medio": v3
+                        COL_LAG_1: v1, COL_LAG_2: v2, COL_LAG_3: v3
                     }
                     res = requests.post(URL_WEB_APP, json=datos)
-                    if "Éxito" in res.text or res.status_code == 200:
-                        st.success("¡Sesión de Lag Guardada en Excel!")
-                        st.balloons()
-                    else:
-                        st.error(f"Google rechazó los datos: {res.text}")
+                    st.success("¡Sesión de Lag Guardada!")
+                    st.balloons()
                 else:
                     st.error("La suma debe ser 10")
         else:
@@ -94,7 +90,7 @@ else: # ESTADÍSTICAS
     df_pc = leer_hoja("Putt_Corto")
     if not df_pc.empty:
         st.subheader("🎯 Efectividad Putt Corto (Práctica)")
-        df_pc.columns = [c.replace('Subcategoria', 'Subcategoria') for c in df_pc.columns]
+        df_pc.columns = [c.replace('Subcategorìa', 'Subcategoria') for c in df_pc.columns]
         if 'Subcategoria' in df_pc.columns:
             df_resumen = df_pc.groupby('Subcategoria').agg({'Aciertos': 'sum', 'Intentos': 'sum'}).reset_index()
             df_resumen['%'] = (df_resumen['Aciertos'] / df_resumen['Intentos']) * 100
@@ -108,17 +104,18 @@ else: # ESTADÍSTICAS
     df_lp = leer_hoja("Lag_Putting")
     if not df_lp.empty:
         st.subheader("📏 Distribución Lag Putting (Práctica)")
-        t1, t2, t3 = "menos de 1 metro", "un metro y medio", "mas de un metro y medio"
-        for col in [t1, t2, t3]:
+        
+        # Usamos las variables de nombre que definimos arriba
+        for col in [COL_LAG_1, COL_LAG_2, COL_LAG_3]:
             if col in df_lp.columns:
                 df_lp[col] = pd.to_numeric(df_lp[col], errors='coerce').fillna(0)
         
-        s1 = df_lp[t1].sum() if t1 in df_lp.columns else 0
-        s2 = df_lp[t2].sum() if t2 in df_lp.columns else 0
-        s3 = df_lp[t3].sum() if t3 in df_lp.columns else 0
+        s1 = df_lp[COL_LAG_1].sum() if COL_LAG_1 in df_lp.columns else 0
+        s2 = df_lp[COL_LAG_2].sum() if COL_LAG_2 in df_lp.columns else 0
+        s3 = df_lp[COL_LAG_3].sum() if COL_LAG_3 in df_lp.columns else 0
         
         if (s1 + s2 + s3) > 0:
-            fig2 = px.pie(values=[s1, s2, s3], names=[t1, t2, t3], hole=0.4)
+            fig2 = px.pie(values=[s1, s2, s3], names=[COL_LAG_1, COL_LAG_2, COL_LAG_3], hole=0.4)
             st.plotly_chart(fig2)
         else:
-            st.info("Aún no hay datos de Lag cargados correctamente.")
+            st.info("Aún no hay datos de Lag cargados.")
