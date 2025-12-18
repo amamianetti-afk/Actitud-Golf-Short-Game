@@ -35,7 +35,8 @@ def leer(hoja):
     try:
         u = f"https://docs.google.com/spreadsheets/d/{S_ID}/gviz/tq?tqx=out:csv&sheet={hoja}"
         df = pd.read_csv(u)
-        df.columns = df.columns.str.strip()
+        # Limpieza crítica: quitamos espacios y tildes de los nombres de columnas
+        df.columns = df.columns.str.strip().str.replace('ì', 'i').str.replace('í', 'i').str.title()
         return df[df['Nombre'] == user] if 'Nombre' in df.columns else pd.DataFrame()
     except:
         return pd.DataFrame()
@@ -90,23 +91,33 @@ else:
     st.header(f"📊 Reporte: {user}")
     st.subheader("🛠️ Práctica")
     c1, c2 = st.columns(2)
+    
+    # --- ESTADISTICAS PUTT CORTO ---
     df1 = leer("Putt_Corto")
-    if not df1.empty:
+    if not df1.empty and 'Subcategoria' in df1.columns:
         res = df1.groupby('Subcategoria').agg({'Aciertos':'sum','Intentos':'sum'}).reset_index()
         res['%'] = (res['Aciertos']/res['Intentos'])*100
         c1.plotly_chart(px.bar(res, x='Subcategoria', y='%', range_y=[0,105], text='%'))
+    else:
+        c1.info("No hay datos de Putt Corto")
+
+    # --- ESTADISTICAS LAG ---
     df2 = leer("Lag_Putting")
     if not df2.empty:
-        cols = ["menos de 1 metro", "entre un metro y un metro y medio", "mas de un metro y medio"]
-        vals = [df2[c].sum() for c in cols if c in df2.columns]
-        c2.plotly_chart(px.pie(values=vals, names=cols, hole=0.4))
+        cols = ["Menos De 1 Metro", "Entre Un Metro Y Un Metro Y Medio", "Mas De Un Metro Y Medio"]
+        existentes = [c for c in cols if c in df2.columns]
+        if existentes:
+            vals = [df2[c].sum() for c in existentes]
+            c2.plotly_chart(px.pie(values=vals, names=existentes, hole=0.4))
+        else:
+            c2.info("No hay datos de Lag")
     
     st.divider()
     st.subheader("🏌️ Cancha")
     c3, c4 = st.columns(2)
     df3 = leer("Putt_Corto_Cancha")
-    if not df3.empty:
+    if not df3.empty and 'Resultado' in df3.columns:
         c3.plotly_chart(px.histogram(df3, x="Resultado"))
     df4 = leer("Lag_Cancha")
-    if not df4.empty:
+    if not df4.empty and 'Resultado' in df4.columns:
         c4.plotly_chart(px.pie(df4, names="Resultado"))
